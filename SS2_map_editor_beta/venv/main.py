@@ -2,22 +2,27 @@ import tkinter as tk
 import tkinter.messagebox as mb
 from functools import partial
 import json
+import math
 
 # TODO
+# удаление полигона
+# возврат действия(есс)
 # сетка
 # GUI:
-# равнение по сетке на <Shift>
+# установка полигона на <Enter>, движение по карте на <Mouse3>
+# равнение по сетке на <Shift>, возврат действия на <Ctrl> + <Z>(есс)
 
 class App(tk.Tk):
     # Данные камеры
     camera_x = 0
     camera_y = 0
-    scale = 1
+    scale = 50
 
     # Необходимые переменные
     now = 0
     curr_bu = 0
     speed_scale = 1.2
+    ras = "txt"
 
     # Тексты для кнопок
     texts = ("внешние границы", "внутренние границы")
@@ -75,7 +80,7 @@ class App(tk.Tk):
         self.pressed_keys.pop(event.keysym, None)
 
     # Отрисовка полигона по точкам и цвету
-    def draw_polygon(self, polygon, color):
+    def draw_polygon(self, polygon, color, filled):
         copy = polygon.copy()
         p = 0
         for r in copy:
@@ -85,7 +90,10 @@ class App(tk.Tk):
                 copy[p] = (copy[p] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
             p += 1
         poly_cords = tuple(copy)
-        self.canvas.create_polygon(*poly_cords, fill=color)
+        if (filled == 1):
+            self.canvas.create_polygon(*poly_cords, fill=color)
+        else:
+            self.canvas.create_polygon(*poly_cords, outline=color, fill='', width=2)
 
     def my_printing(self, load_it):
         sum_text = ""
@@ -106,7 +114,7 @@ class App(tk.Tk):
         return sum_text
 
     def my_read(self, file_name):
-        f = open(f'{file_name}.txt', 'r')
+        f = open(f'{file_name}.{self.ras}', 'r')
         load_it = []
         while (True):
             str = f.readline()
@@ -130,6 +138,30 @@ class App(tk.Tk):
                 load_it.append(new_poly.copy())
         return load_it
 
+    def draw_grid(self):
+        x_initial = int(-self.camera_x) - math.ceil(int(self.canvas['width']) / self.scale / 2)  - 1
+        col_x = math.ceil(int(self.canvas['width']) / self.scale) + 1
+        for i in range(col_x):
+            x_initial += 1
+            line_copy = [x_initial, -1000, x_initial, 1000]
+            line_copy[0] = (line_copy[0] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+            line_copy[1] = (line_copy[1] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+            line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line = tuple(line_copy)
+            self.canvas.create_line(*line, fill="gray", width=2)
+        y_initial = int(-self.camera_y) - math.ceil(int(self.canvas['height']) / self.scale/ 2)  - 1
+        col_y = math.ceil(int(self.canvas['height']) / self.scale) + 1
+        for i in range(col_y):
+            y_initial += 1
+            line_copy = [-1000, y_initial, 1000, y_initial]
+            line_copy[0] = (line_copy[0] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+            line_copy[1] = (line_copy[1] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+            line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line = tuple(line_copy)
+            self.canvas.create_line(*line, fill="gray", width=2)
+
     # Функция обработки событий нажатия на клавиатуру и отрисовка
     def somebody_touches_my_keyboard(self):
         self.canvas.delete("all")
@@ -147,9 +179,9 @@ class App(tk.Tk):
         # Колесико мыши
         if 'm_w' in self.pressed_keys:
             if (self.pressed_keys["m_w"] > 0):
-                self.scale *= self.speed_scale
+                self.scale *= round(self.speed_scale, 2)
             else:
-                self.scale /= self.speed_scale
+                self.scale /= round(self.speed_scale, 2)
             self.pressed_keys.pop("m_w", None)
 
         if "m_x" in self.pressed_keys:
@@ -188,9 +220,9 @@ class App(tk.Tk):
 
             saving = self.my_printing(self.load_it)
 
-            f = open(f'{file_name}.txt', 'w')
+            f = open(f'{file_name}.{self.ras}', 'w')
             f.write(saving)
-            self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.txt')
+            self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.{self.ras}')
             f.close()
 
         # Новая карта
@@ -200,7 +232,7 @@ class App(tk.Tk):
             self.curr_bu = 0
             self.camera_x = 0
             self.camera_y = 0
-            self.scale = 1
+            self.scale = 50
             self.one_t = 0
             for w in range(0, 10):
                 self.T.delete(1.0 + w / 10)
@@ -222,17 +254,17 @@ class App(tk.Tk):
                         file_name += s
             try:
                 self.load_it = self.my_read(file_name)
-                self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.txt')
+                self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.{self.ras}')
                 self.back_up.clear()
                 self.curr_bu = 0
                 self.poly_points.clear()
                 self.camera_x = 0
                 self.camera_y = 0
-                self.scale = 1
+                self.scale = 50
                 self.one_t = 0
                 self.now = 0
             except BaseException:
-                print("fail to open this")
+                print("failed to open")
 
         if ('Control_L' in self.pressed_keys and 'r' in self.pressed_keys):
             command = ""
@@ -268,10 +300,15 @@ class App(tk.Tk):
                 self.poly_points.clear()
                 self.now = 0
 
+        self.draw_grid()
+
         # Draw black polygon
         for polygon in self.load_it:
             copy = polygon.copy()
-            self.draw_polygon(copy[1:], "black")
+            if (copy[0] == 0):
+                self.draw_polygon(copy[1:], "black", 0)
+            else:
+                self.draw_polygon(copy[1:], "black", 1)
 
         # Draw red line
         if (self.now == 2):
@@ -285,7 +322,10 @@ class App(tk.Tk):
 
         # Draw red polygon
         if (self.now > 2):
-            self.draw_polygon(self.poly_points, "red")
+            if ((self.form == None) or (self.form == "внешние границы")):
+                self.draw_polygon(self.poly_points, "red", 1)
+            else:
+                self.draw_polygon(self.poly_points, "red", 0)
             can_be = self.poly_points.copy()
             if "m_x" in self.pressed_keys:
                 # mouse_x = (self.pressed_keys["m_x"] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
@@ -294,7 +334,10 @@ class App(tk.Tk):
                 new_y = (self.pressed_keys["m_y"] - int(self.canvas['height']) / 2) / self.scale - self.camera_y
                 can_be.append(new_x)
                 can_be.append(new_y)
-            self.draw_polygon(can_be, "red")
+            if ((self.form == None) or (self.form == "внешние границы")):
+                self.draw_polygon(can_be, "red", 1)
+            else:
+                self.draw_polygon(can_be, "red", 0)
             can_be.clear()
 
         self.after(20, self.somebody_touches_my_keyboard)
@@ -310,8 +353,8 @@ class App(tk.Tk):
     def append_point(self, event):
         x = (event.x - int(self.canvas['width']) / 2) / self.scale - self.camera_x
         y = (event.y - int(self.canvas['height']) / 2) / self.scale - self.camera_y
-        self.poly_points.append(x)
-        self.poly_points.append(y)
+        self.poly_points.append(round(x, 2))
+        self.poly_points.append(round(y, 2))
         self.now += 1
 
     # Процесс добавления нового отредактированного полигона
@@ -320,11 +363,11 @@ class App(tk.Tk):
             self.now = 0
             if ((self.form == None) or (self.form == "внешние границы")):
                 self.poly_points.reverse()
-                self.poly_points.append(0)
+                self.poly_points.append(1)
                 self.poly_points.reverse()
             if (self.form == "внутренние границы"):
                 self.poly_points.reverse()
-                self.poly_points.append(1)
+                self.poly_points.append(0)
                 self.poly_points.reverse()
             #self.load_it.append(json.dumps(self.poly_points))
             self.load_it.append(self.poly_points.copy())
