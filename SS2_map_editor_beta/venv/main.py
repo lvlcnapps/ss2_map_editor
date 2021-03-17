@@ -23,6 +23,7 @@ class App(tk.Tk):
     curr_bu = 0
     speed_scale = 1.2
     ras = "txt"
+    speed = 3
 
     # Тексты для кнопок
     texts = ("внешние границы", "внутренние границы")
@@ -149,7 +150,10 @@ class App(tk.Tk):
             line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
             line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
             line = tuple(line_copy)
-            self.canvas.create_line(*line, fill="gray", width=2)
+            if (x_initial == 0):
+                self.canvas.create_line(*line, fill="blue", width=3)
+            else:
+                self.canvas.create_line(*line, fill="gray", width=2)
         y_initial = int(-self.camera_y) - math.ceil(int(self.canvas['height']) / self.scale/ 2)  - 1
         col_y = math.ceil(int(self.canvas['height']) / self.scale) + 1
         for i in range(col_y):
@@ -160,21 +164,32 @@ class App(tk.Tk):
             line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
             line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
             line = tuple(line_copy)
-            self.canvas.create_line(*line, fill="gray", width=2)
+            if (y_initial == 0):
+                self.canvas.create_line(*line, fill="blue", width=3)
+            else:
+                self.canvas.create_line(*line, fill="gray", width=2)
 
     # Функция обработки событий нажатия на клавиатуру и отрисовка
     def somebody_touches_my_keyboard(self):
         self.canvas.delete("all")
-        speed = 3
+
         # События кнопок
         if 'Right' in self.pressed_keys:
-            self.camera_x += speed / self.scale
+            self.camera_x += self.speed / self.scale
         if 'Left' in self.pressed_keys:
-            self.camera_x -= speed / self.scale
+            self.camera_x -= self.speed / self.scale
         if 'Down' in self.pressed_keys:
-            self.camera_y += speed / self.scale
+            self.camera_y += self.speed / self.scale
         if 'Up' in self.pressed_keys:
-            self.camera_y -= speed / self.scale
+            self.camera_y -= self.speed / self.scale
+        if 'd' in self.pressed_keys:
+            self.camera_x -= self.speed / self.scale
+        if 'a' in self.pressed_keys:
+            self.camera_x += self.speed / self.scale
+        if 's' in self.pressed_keys:
+            self.camera_y -= self.speed / self.scale
+        if 'w' in self.pressed_keys:
+            self.camera_y += self.speed / self.scale
 
         # Колесико мыши
         if 'm_w' in self.pressed_keys:
