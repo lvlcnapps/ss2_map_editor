@@ -1,6 +1,7 @@
 # Map creator and editor for Space Sodomy 2 Online
 This python based app create a map using polygons. Output file has walls, walls has points and other info.
 To run you will need to download PyCharm and python 3.8 or zip archive with main.exe
+Zip archive: https://github.com/lvlcnapps/ss2_map_editor/blob/be45cfd4eb01364ea46f68d8369791871e44707c/SS2_map_editor_beta/SS2%20map%20editor.zip?raw=true
 
 ### How to make new polygon
 To create new point you can use **mouse left click** on canvas. This point will automatically append to current new polygon (red coloured).
