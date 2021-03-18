@@ -5,30 +5,25 @@ import json
 import math
 
 # TODO
-# удаление полигона
-# возврат действия(есс)
-# сетка
-# GUI:
-# установка полигона на <Enter>, движение по карте на <Mouse3>
-# равнение по сетке на <Shift>, возврат действия на <Ctrl> + <Z>(есс)
+# deleting polygons
 
 class App(tk.Tk):
-    # Данные камеры
+    # Camera data
     camera_x = 0
     camera_y = 0
     scale = 50
 
-    # Необходимые переменные
+    # params
     now = 0
     curr_bu = 0
     speed_scale = 1.2
-    ras = "txt"
+    ras = "lvl"
     speed = 3
 
-    # Тексты для кнопок
+    # texts
     texts = ("внешние границы", "внутренние границы")
 
-    # Массивы данных и их доп. данные
+    # arrays, data
     poly_points = []
     load_it = []
     back_up = [[]]
@@ -42,16 +37,17 @@ class App(tk.Tk):
         self.label.pack()
         self.canvas = tk.Canvas(self, width=640, height=480, bg="white")
         frame = tk.Frame(self)
-        # Кнопки
+        # Buttons
         for form in self.texts:
             btn = tk.Button(frame, text=form.capitalize())
             btn.config(command=partial(self.set_selection, btn, form))
             btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
 
-        # Бинд событий и текстового поля
+        # Bindings events to functions
         self.canvas.bind("<Button-1>", self.append_point)
         self.canvas.bind("<Button-3>", self.draw_item)
         self.pressed_keys = {}
+        self.released_keys = {}
         self.bind("<KeyPress>", self.key_press)
         self.bind("<KeyRelease>", self.key_release)
         self.bind("<MouseWheel>", self.mouse_w)
@@ -61,34 +57,35 @@ class App(tk.Tk):
         self.T = tk.Text()
         self.T.pack()
 
-        # Функция считывания с клавиатуры и отрисовки полигонов
+        # main loop
         self.somebody_touches_my_keyboard()
 
-    # Добавление в массив событий кручение колесика мышки
+    # mouse wheel delay event
     def mouse_w(self, event):
         self.pressed_keys["m_w"] = event.delta
 
+    # mouse motion event
     def mouse_xy(self, event):
         self.pressed_keys["m_x"] = event.x
         self.pressed_keys["m_y"] = event.y
 
-    # Добавление в массив событий нажатие на клавиши
+    # keyboard
     def key_press(self, event):
         self.pressed_keys[event.keysym] = True
 
-    # Добавление в массив событий отпускания клавиши
     def key_release(self, event):
+        self.released_keys[event.keysym] = True
         self.pressed_keys.pop(event.keysym, None)
 
-    # Отрисовка полигона по точкам и цвету
+    # draw polygon fuction /list [x1,y1,x2,y2,...]/string color/1 or 0 = filled or outlined/
     def draw_polygon(self, polygon, color, filled):
         copy = polygon.copy()
         p = 0
         for r in copy:
             if (p % 2 == 0):
-                copy[p] = (copy[p] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+                copy[p] = self.convert_x_to_my_cords(copy[p])
             else:
-                copy[p] = (copy[p] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+                copy[p] = self.convert_y_to_my_cords(copy[p])
             p += 1
         poly_cords = tuple(copy)
         if (filled == 1):
@@ -96,6 +93,7 @@ class App(tk.Tk):
         else:
             self.canvas.create_polygon(*poly_cords, outline=color, fill='', width=2)
 
+    # making huge string of polygons to save it
     def my_printing(self, load_it):
         sum_text = ""
         for poly in load_it:
@@ -114,6 +112,7 @@ class App(tk.Tk):
         sum_text += "END"
         return sum_text
 
+    # converting from string to polygon (file reading)
     def my_read(self, file_name):
         f = open(f'{file_name}.{self.ras}', 'r')
         load_it = []
@@ -139,16 +138,30 @@ class App(tk.Tk):
                 load_it.append(new_poly.copy())
         return load_it
 
+    # converting from/to my cords system
+    def convert_x_to_my_cords(self, old_c):
+        return (old_c + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+
+    def convert_y_to_my_cords(self, old_c):
+        return (old_c + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+
+    def convert_x_from_my_cords(self, new_c):
+        return (new_c - int(self.canvas['width']) / 2) / self.scale - self.camera_x
+
+    def convert_y_from_my_cords(self, new_c):
+        return (new_c - int(self.canvas['height']) / 2) / self.scale - self.camera_y
+
+    # drawing grid and Oxy
     def draw_grid(self):
         x_initial = int(-self.camera_x) - math.ceil(int(self.canvas['width']) / self.scale / 2)  - 1
         col_x = math.ceil(int(self.canvas['width']) / self.scale) + 1
         for i in range(col_x):
             x_initial += 1
             line_copy = [x_initial, -1000, x_initial, 1000]
-            line_copy[0] = (line_copy[0] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[1] = (line_copy[1] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
-            line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line_copy[0] = self.convert_x_to_my_cords(line_copy[0])
+            line_copy[1] = self.convert_y_to_my_cords(line_copy[1])
+            line_copy[2] = self.convert_x_to_my_cords(line_copy[2])
+            line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
             if (x_initial == 0):
                 self.canvas.create_line(*line, fill="blue", width=3)
@@ -159,21 +172,21 @@ class App(tk.Tk):
         for i in range(col_y):
             y_initial += 1
             line_copy = [-1000, y_initial, 1000, y_initial]
-            line_copy[0] = (line_copy[0] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[1] = (line_copy[1] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
-            line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line_copy[0] = self.convert_x_to_my_cords(line_copy[0])
+            line_copy[1] = self.convert_y_to_my_cords(line_copy[1])
+            line_copy[2] = self.convert_x_to_my_cords(line_copy[2])
+            line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
             if (y_initial == 0):
                 self.canvas.create_line(*line, fill="blue", width=3)
             else:
                 self.canvas.create_line(*line, fill="gray", width=2)
 
-    # Функция обработки событий нажатия на клавиатуру и отрисовка
+    # main loop
     def somebody_touches_my_keyboard(self):
         self.canvas.delete("all")
 
-        # События кнопок
+        # movement
         if 'Right' in self.pressed_keys:
             self.camera_x += self.speed / self.scale
         if 'Left' in self.pressed_keys:
@@ -182,16 +195,16 @@ class App(tk.Tk):
             self.camera_y += self.speed / self.scale
         if 'Up' in self.pressed_keys:
             self.camera_y -= self.speed / self.scale
-        if 'd' in self.pressed_keys:
+        if ('Alt_L' in self.pressed_keys and 'd' in self.pressed_keys):
             self.camera_x -= self.speed / self.scale
-        if 'a' in self.pressed_keys:
+        if ('Alt_L' in self.pressed_keys and 'a' in self.pressed_keys):
             self.camera_x += self.speed / self.scale
-        if 's' in self.pressed_keys:
+        if ('Alt_L' in self.pressed_keys and 's' in self.pressed_keys):
             self.camera_y -= self.speed / self.scale
-        if 'w' in self.pressed_keys:
+        if ('Alt_L' in self.pressed_keys and 'w' in self.pressed_keys):
             self.camera_y += self.speed / self.scale
 
-        # Колесико мыши
+        # changing scale with mouse wheel
         if 'm_w' in self.pressed_keys:
             if (self.pressed_keys["m_w"] > 0):
                 self.scale *= round(self.speed_scale, 2)
@@ -199,30 +212,30 @@ class App(tk.Tk):
                 self.scale /= round(self.speed_scale, 2)
             self.pressed_keys.pop("m_w", None)
 
+        # constantly tracking mouse cords
         if "m_x" in self.pressed_keys:
-            mouse_x = (self.pressed_keys["m_x"] - int(self.canvas['width']) / 2) / self.scale - self.camera_x
-            mouse_y = (self.pressed_keys["m_y"] - int(self.canvas['height']) / 2) / self.scale - self.camera_y
+            mouse_x = self.convert_x_from_my_cords(self.pressed_keys["m_x"])
+            mouse_y = self.convert_y_from_my_cords(self.pressed_keys["m_y"])
             self.label["text"] = f'Координаты мыши: x={mouse_x}, y={mouse_y} Масштаб: {self.scale}'
 
-        one_time = 0
-        if (self.one_t == 0):
-            one_time = 1
-            self.one_t = 5
-        else:
-            self.one_t -= 1
-
-        # Отмена действия
-        if ('Control_L' in self.pressed_keys and 'z' in self.pressed_keys):
-            if ((self.curr_bu > 0) and (one_time == 1)):
+        # undo
+        if (not 'Control_L' in self.pressed_keys and 'z' in self.released_keys):
+            self.released_keys.pop('z', None)
+        if ('Control_L' in self.pressed_keys and 'z' in self.released_keys):
+            self.released_keys.pop('z', None)
+            if (self.curr_bu > 0):
                 self.load_it = self.back_up[self.curr_bu - 1].copy()
                 self.curr_bu -= 1
-                one_time = 0
 
+        # close
         if ('Control_L' in self.pressed_keys and 'w' in self.pressed_keys):
             raise SystemExit(1)
 
-        # Сохранение в файл
-        if ('Control_L' in self.pressed_keys and 's' in self.pressed_keys):
+        # save
+        if (not 'Control_L' in self.pressed_keys and 's' in self.released_keys):
+            self.released_keys.pop('s', None)
+        if ('Control_L' in self.pressed_keys and 's' in self.released_keys):
+            self.released_keys.pop('s', None)
             file_name = ""
             cord = 1.0
             if (self.T.get(cord) == '\n'):
@@ -240,8 +253,11 @@ class App(tk.Tk):
             self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.{self.ras}')
             f.close()
 
-        # Новая карта
-        if ('Control_L' in self.pressed_keys and 'n' in self.pressed_keys):
+        # new
+        if (not 'Control_L' in self.pressed_keys and 'n' in self.released_keys):
+            self.released_keys.pop('n', None)
+        if ('Control_L' in self.pressed_keys and 'n' in self.released_keys):
+            self.released_keys.pop('n', None)
             self.load_it.clear()
             self.back_up.clear()
             self.curr_bu = 0
@@ -256,8 +272,11 @@ class App(tk.Tk):
             self.canvas.delete("all")
             self.title("Редактор карт SS2 beta")
 
-        # Открыть файл
-        if ('Control_L' in self.pressed_keys and 'o' in self.pressed_keys):
+        # open
+        if (not 'Control_L' in self.pressed_keys and 'o' in self.released_keys):
+            self.released_keys.pop('o', None)
+        if ('Control_L' in self.pressed_keys and 'o' in self.released_keys):
+            self.released_keys.pop('o', None)
             file_name = ""
             cord = 1.0
             if (self.T.get(cord) == '\n'):
@@ -281,7 +300,12 @@ class App(tk.Tk):
             except BaseException:
                 print("failed to open")
 
-        if ('Control_L' in self.pressed_keys and 'r' in self.pressed_keys):
+        # execute
+        if (not 'Control_L' in self.pressed_keys and 'r' in self.released_keys):
+            self.released_keys.pop('r', None)
+        if ('Control_L' in self.pressed_keys and 'r' in self.released_keys):
+            print("hmm")
+            self.released_keys.pop('r', None)
             command = ""
             cord = 1.0
             if (self.T.get(cord) == '\n'):
@@ -314,65 +338,66 @@ class App(tk.Tk):
             if (command.startswith("del_now")):
                 self.poly_points.clear()
                 self.now = 0
+            if (command.startswith("invert")):
+                self.speed = -self.speed
 
+        # drawing grig
         self.draw_grid()
 
-        # Draw black polygon
+        # draw saved polygons
         for polygon in self.load_it:
             copy = polygon.copy()
             if (copy[0] == 0):
-                self.draw_polygon(copy[1:], "black", 0)
+                self.draw_polygon(copy[1:], "black", 0) # outline/outer
             else:
-                self.draw_polygon(copy[1:], "black", 1)
+                self.draw_polygon(copy[1:], "black", 1) # filled/inner
 
-        # Draw red line
+        # draw red line
         if (self.now == 2):
             line_copy = self.poly_points.copy()
-            line_copy[0] = (line_copy[0] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[1] = (line_copy[1] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
-            line_copy[2] = (line_copy[2] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-            line_copy[3] = (line_copy[3] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+            line_copy[0] = self.convert_x_to_my_cords(line_copy[0])
+            line_copy[1] = self.convert_y_to_my_cords(line_copy[1])
+            line_copy[2] = self.convert_x_to_my_cords(line_copy[2])
+            line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
             self.canvas.create_line(*line, fill="red", width=2)
 
-        # Draw red polygon
+        # draw red polygon
         if (self.now > 2):
             if ((self.form == None) or (self.form == "внешние границы")):
-                self.draw_polygon(self.poly_points, "red", 1)
+                self.draw_polygon(self.poly_points, "red", 1) # inner
             else:
-                self.draw_polygon(self.poly_points, "red", 0)
+                self.draw_polygon(self.poly_points, "red", 0) # outer
             can_be = self.poly_points.copy()
-            if "m_x" in self.pressed_keys:
-                # mouse_x = (self.pressed_keys["m_x"] + self.camera_x) * self.scale + int(self.canvas['width']) / 2
-                # mouse_y = (self.pressed_keys["m_y"] + self.camera_y) * self.scale + int(self.canvas['height']) / 2
-                new_x = (self.pressed_keys["m_x"] - int(self.canvas['width']) / 2) / self.scale - self.camera_x
-                new_y = (self.pressed_keys["m_y"] - int(self.canvas['height']) / 2) / self.scale - self.camera_y
+            if "m_x" in self.pressed_keys: # if mouse on canvas: draw possible red polygon
+                new_x = self.convert_x_from_my_cords(self.pressed_keys["m_x"])
+                new_y = self.convert_y_from_my_cords(self.pressed_keys["m_y"])
                 can_be.append(new_x)
                 can_be.append(new_y)
             if ((self.form == None) or (self.form == "внешние границы")):
-                self.draw_polygon(can_be, "red", 1)
+                self.draw_polygon(can_be, "red", 1) # inner
             else:
-                self.draw_polygon(can_be, "red", 0)
+                self.draw_polygon(can_be, "red", 0) # outer
             can_be.clear()
 
-        self.after(20, self.somebody_touches_my_keyboard)
+        self.after(20, self.somebody_touches_my_keyboard) # delay
 
-    # че то там для кнопок
+    # buttons
     def set_selection(self, widget, form):
         for w in widget.master.winfo_children():
             w.config(relief=tk.RAISED)
         widget.config(relief=tk.SUNKEN)
         self.form = form
 
-    # Добавление точки в редактируемый полигон
+    # appending point to red polygon
     def append_point(self, event):
-        x = (event.x - int(self.canvas['width']) / 2) / self.scale - self.camera_x
-        y = (event.y - int(self.canvas['height']) / 2) / self.scale - self.camera_y
+        x = self.convert_x_from_my_cords(event.x)
+        y = self.convert_y_from_my_cords(event.y)
         self.poly_points.append(round(x, 2))
         self.poly_points.append(round(y, 2))
         self.now += 1
 
-    # Процесс добавления нового отредактированного полигона
+    # appending new polygon
     def draw_item(self, event):
         if (self.now != 0):
             self.now = 0
@@ -384,14 +409,12 @@ class App(tk.Tk):
                 self.poly_points.reverse()
                 self.poly_points.append(0)
                 self.poly_points.reverse()
-            #self.load_it.append(json.dumps(self.poly_points))
             self.load_it.append(self.poly_points.copy())
-
             self.back_up.insert(self.curr_bu + 1, self.load_it.copy())
             self.curr_bu += 1
-            #print(self.load_it)
             self.poly_points.clear()
 
+# run
 if __name__ == "__main__":
     app = App()
     app.mainloop()
