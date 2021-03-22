@@ -254,10 +254,9 @@ class App(tk.Tk):
             mouse_y = self.convert_y_from_my_cords(self.pressed_keys["m_y"])
             self.label["text"] = f'Координаты мыши: x={round(mouse_x, 2)}, y={round(mouse_y, 2)} Масштаб: {round(self.scale, 2)}  Помощь: F1'
 
-        if "Control_R" in self.pressed_keys or "Shift_L" in self.pressed_keys:
+        if "Control_R" in self.pressed_keys:
             self.draw_item()
             self.pressed_keys.pop("Control_R", None)
-            self.pressed_keys.pop("Shift_L", None)
 
         # undo
         if (not 'Control_L' in self.pressed_keys and 'z' in self.released_keys):
@@ -387,6 +386,14 @@ class App(tk.Tk):
         # drawing grig
         self.draw_grid()
 
+        if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys:
+            x = round(self.convert_x_from_my_cords(self.pressed_keys["m_x"]))
+            y = round(self.convert_y_from_my_cords(self.pressed_keys["m_y"]))
+            r = 2
+            x_m_r = self.convert_x_to_my_cords(x)
+            y_m_r = self.convert_y_to_my_cords(y)
+            self.canvas.create_oval(x_m_r - r, y_m_r - r, x_m_r + r, y_m_r + r, fill="green")
+
         # draw saved polygons
         for polygon in self.load_it:
             copy = polygon.copy()
@@ -441,8 +448,13 @@ class App(tk.Tk):
     def append_point(self, event):
         x = self.convert_x_from_my_cords(event.x)
         y = self.convert_y_from_my_cords(event.y)
-        self.poly_points.append(round(x, 2))
-        self.poly_points.append(round(y, 2))
+        if "Shift_L" in self.pressed_keys:
+            self.poly_points.append(round(x))
+            self.poly_points.append(round(y))
+            self.pressed_keys.pop("Shift_L", None)
+        else:
+            self.poly_points.append(round(x, 2))
+            self.poly_points.append(round(y, 2))
         self.now += 1
 
     # appending new polygon
