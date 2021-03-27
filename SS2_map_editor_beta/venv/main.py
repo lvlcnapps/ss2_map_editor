@@ -5,13 +5,16 @@ import json
 import math
 
 # TODO
-# deleting polygons
+# moving choosed polygon
 
 class App(tk.Tk):
     # Camera data
     camera_x = 0
     camera_y = 0
     scale = 50
+    min_scale = 10
+    max_scale = 1000
+    choosed_id = -1
 
     # params
     now = 0
@@ -39,7 +42,8 @@ class App(tk.Tk):
         self.form = None
         self.form_2 = None
         self.label = tk.Label(text="Начало работы")
-        self.label.pack()
+        self.label.pack(fill=tk.BOTH)
+        self.geometry("640x630")
         self.canvas = tk.Canvas(self, width=640, height=480, bg="white", cursor="tcross")
 
         frame = tk.Frame(self)
@@ -53,25 +57,25 @@ class App(tk.Tk):
         self.canvas.bind("<Button-1>", self.append_point)
         self.canvas.bind("<Button-3>", self.draw_item_2)
         self.pressed_keys = {}
+        self.choosed_poly = []
         self.released_keys = {}
         self.bind("<KeyPress>", self.key_press)
         self.bind("<KeyRelease>", self.key_release)
         self.bind("<MouseWheel>", self.mouse_w)
-
         self.canvas.bind("<Motion>", self.mouse_xy)
-        self.canvas.pack()
+        self.canvas.pack(fill=tk.BOTH)
         frame.pack(fill=tk.BOTH)
         self.save_info = tk.Label(text="Поле для названия файла:")
-        self.save_info.pack()
+        self.save_info.pack(fill=tk.BOTH)
         self.T = tk.Text(height=1, width=10)
-        self.T.pack()
-        file_buttons_frame = tk.Frame(self, width=640)
+        self.T.pack(fill=tk.Y)
+        self.file_buttons_frame = tk.Frame(self, width=640)
         # Buttons
         for form in self.texts_2:
-            btn = tk.Button(file_buttons_frame, text=form.capitalize())
+            btn = tk.Button(self.file_buttons_frame, text=form.capitalize())
             btn.config(command=partial(self.other_selection, form))
             btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
-        file_buttons_frame.pack(fill=tk.BOTH)
+        self.file_buttons_frame.pack(fill=tk.BOTH)
 
         # main loop
         self.somebody_touches_my_keyboard()
@@ -87,6 +91,10 @@ class App(tk.Tk):
     def mouse_xy(self, event):
         #print(event.state)
         self.canvas.focus_set()
+        if (event.state > 1000):
+            if ("ch_id" in self.pressed_keys):
+                pass
+                #self.move_polygon(event.x, event.y, self.pressed_keys["ch_id"])
         if (500 < event.state < 1000):
             self.canvas["cursor"] = "fleur"
             self.move_camera(event.x, event.y)
@@ -118,8 +126,10 @@ class App(tk.Tk):
         poly_cords = tuple(copy)
         if (filled == 1):
             self.canvas.create_polygon(*poly_cords, fill=color)
-        else:
+        elif (filled == 0):
             self.canvas.create_polygon(*poly_cords, outline=color, fill='', width=2)
+        else:
+            self.canvas.create_polygon(*poly_cords, fill=color, outline="cyan", width=3)
 
     # making huge string of polygons to save it
     def my_printing(self, load_it):
@@ -168,21 +178,21 @@ class App(tk.Tk):
 
     # converting from/to my cords system
     def convert_x_to_my_cords(self, old_c):
-        return (old_c + self.camera_x) * self.scale + int(self.canvas['width']) / 2
+        return (old_c + self.camera_x) * self.scale + int(self.canvas.winfo_width()) / 2
 
     def convert_y_to_my_cords(self, old_c):
-        return (old_c + self.camera_y) * self.scale + int(self.canvas['height']) / 2
+        return (old_c + self.camera_y) * self.scale + int(self.canvas.winfo_height()) / 2
 
     def convert_x_from_my_cords(self, new_c):
-        return (new_c - int(self.canvas['width']) / 2) / self.scale - self.camera_x
+        return (new_c - int(self.canvas.winfo_width()) / 2) / self.scale - self.camera_x
 
     def convert_y_from_my_cords(self, new_c):
-        return (new_c - int(self.canvas['height']) / 2) / self.scale - self.camera_y
+        return (new_c - int(self.canvas.winfo_height()) / 2) / self.scale - self.camera_y
 
     # drawing grid and Oxy
     def draw_grid(self):
-        x_initial = int(-self.camera_x) - math.ceil(int(self.canvas['width']) / self.scale / 2)  - 1
-        col_x = math.ceil(int(self.canvas['width']) / self.scale) + 2
+        x_initial = int(-self.camera_x) - math.ceil(int(self.canvas.winfo_width()) / self.scale / 2)  - 1
+        col_x = math.ceil(int(self.canvas.winfo_width()) / self.scale) + 2
         for i in range(col_x):
             x_initial += 1
             line_copy = [x_initial, -1000, x_initial, 1000]
@@ -195,8 +205,8 @@ class App(tk.Tk):
                 self.canvas.create_line(*line, fill="blue", width=3)
             else:
                 self.canvas.create_line(*line, fill="gray", width=2)
-        y_initial = int(-self.camera_y) - math.ceil(int(self.canvas['height']) / self.scale/ 2)  - 1
-        col_y = math.ceil(int(self.canvas['height']) / self.scale) + 1
+        y_initial = int(-self.camera_y) - math.ceil(int(self.canvas.winfo_height()) / self.scale/ 2)  - 1
+        col_y = math.ceil(int(self.canvas.winfo_height()) / self.scale) + 1
         for i in range(col_y):
             y_initial += 1
             line_copy = [-1000, y_initial, 1000, y_initial]
@@ -210,16 +220,78 @@ class App(tk.Tk):
             else:
                 self.canvas.create_line(*line, fill="gray", width=2)
 
+    # moving camera by mouse wheel click
     def move_camera(self, mouse_x, mouse_y):
         if "m_x" in self.pressed_keys:
             self.camera_x += (mouse_x - self.mouse_x_prev) / self.scale
             self.camera_y += (mouse_y - self.mouse_y_prev) / self.scale
 
+    # beta
+    def move_polygon(self, mouse_x, mouse_y, id):
+        new_load_it = []
+        count_id = 0
+
+        g = 0
+        for pol in self.load_it:
+            if (g == id):
+                xp = self.getXparse(pol)
+                yp = self.getYparse(pol)
+                break
+            g += 1
+        m_x = self.convert_x_from_my_cords(mouse_x)
+        m_y = self.convert_y_from_my_cords(mouse_y)
+        #print(self.inPolygon(m_x, m_y, xp, yp))
+        if (self.inPolygon(m_x, m_y, xp, yp)):
+            print("lol")
+            for pol in self.load_it:
+                if (count_id == id):
+                    new = []
+                    f = 0
+                    for i in pol[1:]:
+                        if (f % 2 == 1):
+                            new.append(i + (mouse_y - self.mouse_y_prev) / self.scale)
+                        else:
+                            new.append(i + (mouse_x - self.mouse_x_prev) / self.scale)
+                        f += 1
+                    print(new)
+                    new_load_it.append(new)
+                else:
+                    new_load_it.append(pol)
+                    count_id += 1
+            self.load_it = new_load_it
+
+    # parsing polygon's coords to only X coords or only Y coords
+    def getXparse(self, polygon):
+        f = 1
+        new = []
+        old = polygon.copy()
+        for i in old[1:]:
+            if (f % 2):
+                new.append(i)
+            f += 1
+        return new
+
+    def getYparse(self, polygon):
+        f = 0
+        new = []
+        old = polygon.copy()
+        for i in old[1:]:
+            if (f % 2):
+                new.append(i)
+            f += 1
+        return new
+
     # main loop
     def somebody_touches_my_keyboard(self):
+        # const scale
+        if (self.scale < self.min_scale):
+            self.scale = self.min_scale
+        if (self.scale > self.max_scale):
+            self.scale = self.max_scale
         self.canvas.delete("all")
         #print(self.pressed_keys)
-        # changing scale with mouse whee
+
+        # info
         if 'F1' in self.pressed_keys:
             try:
                 load_it = self.my_read("start_info")
@@ -236,24 +308,59 @@ class App(tk.Tk):
         if 'F1' in self.released_keys:
             self.pressed_keys.pop("F1", None)
             self.released_keys.pop("F1", None)
+
+        # changing scale with mouse wheel
         if 'm_w' in self.pressed_keys:
             mouse_x = self.convert_x_from_my_cords(self.pressed_keys["m_wx"])
             mouse_y = self.convert_y_from_my_cords(self.pressed_keys["m_wy"])
             self.label["text"] = f'Координаты мыши: x={round(mouse_x, 2)}, y={round(mouse_y, 2)} Масштаб: {round(self.scale, 2)} Помощь: F1'
             dS = math.pow(1.1, 0.01 * self.pressed_keys["m_w"])
             self.scale *= dS
-            self.camera_x -= (int(self.canvas['width']) / 2 - self.pressed_keys["m_wx"]) / self.scale * (1 - dS)
-            self.camera_y -= (int(self.canvas['height']) / 2 - self.pressed_keys["m_wy"]) / self.scale * (1 - dS)
+            self.camera_x -= (int(self.canvas.winfo_width()) / 2 - self.pressed_keys["m_wx"]) / self.scale * (1 - dS)
+            self.camera_y -= (int(self.canvas.winfo_height()) / 2 - self.pressed_keys["m_wy"]) / self.scale * (1 - dS)
             self.pressed_keys.pop("m_w", None)
             self.pressed_keys.pop("m_wx", None)
             self.pressed_keys.pop("m_wy", None)
+
+        # if smth choosed
+        if "ch_id" in self.pressed_keys:
+            id = 0
+            for pol in self.load_it:
+                if (id == self.pressed_keys["ch_id"]):
+                    self.choosed_poly = pol
+                id += 1
+
+        # deleting choosed polygon
+        if "ch_id" in self.pressed_keys and "Delete" in self.pressed_keys:
+            new_load_it = []
+            id = 0
+            for pol in self.load_it:
+                if (id != self.pressed_keys["ch_id"]):
+                    new_load_it.append(pol)
+                id += 1
+            self.pressed_keys.pop("ch_id")
+            self.pressed_keys.pop("Delete")
+            self.load_it = new_load_it
 
         # constantly tracking mouse cords
         if "m_x" in self.pressed_keys:
             mouse_x = self.convert_x_from_my_cords(self.pressed_keys["m_x"])
             mouse_y = self.convert_y_from_my_cords(self.pressed_keys["m_y"])
+            id = 0
+            pred_id = -1
+            for polygon in self.load_it:
+                xpol = self.getXparse(polygon)
+                ypol = self.getYparse(polygon)
+                if ((self.inPolygon(mouse_x, mouse_y, xpol, ypol)) and polygon[0] == 1):
+                    pred_id = id
+                id += 1
+
+            if (pred_id >= 0):
+                self.pressed_keys["over"] = pred_id
+
             self.label["text"] = f'Координаты мыши: x={round(mouse_x, 2)}, y={round(mouse_y, 2)} Масштаб: {round(self.scale, 2)}  Помощь: F1'
 
+        # save polygon
         if "Control_R" in self.pressed_keys:
             self.draw_item()
             self.pressed_keys.pop("Control_R", None)
@@ -383,9 +490,10 @@ class App(tk.Tk):
             if (command.startswith("invert")):
                 self.speed = -self.speed
 
-        # drawing grig
+        # drawing grid
         self.draw_grid()
 
+        # align to grid
         if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys:
             x = round(self.convert_x_from_my_cords(self.pressed_keys["m_x"]))
             y = round(self.convert_y_from_my_cords(self.pressed_keys["m_y"]))
@@ -395,12 +503,21 @@ class App(tk.Tk):
             self.canvas.create_oval(x_m_r - r, y_m_r - r, x_m_r + r, y_m_r + r, fill="green")
 
         # draw saved polygons
+        may_id = 0
+        cc_id = -1
+        if ("ch_id" in self.pressed_keys):
+            cc_id = self.pressed_keys["ch_id"]
         for polygon in self.load_it:
             copy = polygon.copy()
             if (copy[0] == 0):
                 self.draw_polygon(copy[1:], "black", 0) # outline/outer
             else:
-                self.draw_polygon(copy[1:], "black", 1) # filled/inner
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "black", 2) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "black", 1) # filled/inner
+            may_id += 1
 
         # draw red line
         if (self.now == 2):
@@ -429,8 +546,6 @@ class App(tk.Tk):
             else:
                 self.draw_polygon(can_be, "red", 0) # outer
             can_be.clear()
-
-
 
         self.after(20, self.somebody_touches_my_keyboard) # delay
 
@@ -474,6 +589,16 @@ class App(tk.Tk):
             self.curr_bu += 1
             self.poly_points.clear()
 
+    # check if point (xx, yy) is in polygon with xp as X coords and yp as Y coords
+    # use getXparse() and getYparse()
+    def inPolygon(self, xx, yy, xp, yp):
+        c = 0
+        for i in range(len(xp)):
+            if (((yp[i] <= yy and yy < yp[i - 1]) or (yp[i - 1] <= yy and yy < yp[i])) and
+                    (xx > (xp[i - 1] - xp[i]) * (yy - yp[i]) / (yp[i - 1] - yp[i]) + xp[i])): c = 1 - c
+        return c
+
+    # appending new polygon
     def draw_item_2(self, event):
         if (self.now != 0):
             self.now = 0
@@ -489,6 +614,9 @@ class App(tk.Tk):
             self.back_up.insert(self.curr_bu + 1, self.load_it.copy())
             self.curr_bu += 1
             self.poly_points.clear()
+        else:
+            if ("over" in self.pressed_keys):
+                self.pressed_keys["ch_id"] = self.pressed_keys["over"]
 
 # run
 if __name__ == "__main__":
