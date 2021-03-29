@@ -2,6 +2,7 @@
 Это приложение, написанное на питоне, создает карту из полигонов. В файл вывода записываются стены, их точки и другая информация. Примерная занятость оперативной памяти: от 6 МБ.
 Чтобы запустить приложение воспользуйтесь интерпретатором **python 3.8 PyCharm** или **скачайте zip архив, распакуйте куда угодно и запустите SS2 Map Editor.exe**.
 Сам архив: https://github.com/lvlcnapps/ss2_map_editor/raw/master/SS2_map_editor_beta/SS2%20map%20editor.zip
+
 Код: https://github.com/lvlcnapps/ss2_map_editor/blob/master/SS2_map_editor_beta/venv/main.py
 
 ### GUI
