@@ -135,6 +135,8 @@ class App(tk.Tk):
     def my_printing(self, load_it):
         sum_text = ""
         for poly in load_it:
+            if (len(poly) < 6):
+                continue
             sum_text += "WALL\n"
             if (poly[0] == 1) :
                 sum_text += "    OUTER\n"
@@ -341,6 +343,8 @@ class App(tk.Tk):
             self.pressed_keys.pop("ch_id")
             self.pressed_keys.pop("Delete")
             self.load_it = new_load_it
+            self.back_up.insert(self.curr_bu + 1, self.load_it.copy())
+            self.curr_bu += 1
 
         # constantly tracking mouse cords
         if "m_x" in self.pressed_keys:
@@ -487,8 +491,10 @@ class App(tk.Tk):
             if (command.startswith("del_now")):
                 self.poly_points.clear()
                 self.now = 0
-            if (command.startswith("invert")):
-                self.speed = -self.speed
+            if (command.startswith("center")):
+                self.camera_x = 0
+                self.camera_y = 0
+                self.scale = 50
 
         # drawing grid
         self.draw_grid()
@@ -497,7 +503,7 @@ class App(tk.Tk):
         if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys:
             x = round(self.convert_x_from_my_cords(self.pressed_keys["m_x"]))
             y = round(self.convert_y_from_my_cords(self.pressed_keys["m_y"]))
-            r = 2
+            r = 3
             x_m_r = self.convert_x_to_my_cords(x)
             y_m_r = self.convert_y_to_my_cords(y)
             self.canvas.create_oval(x_m_r - r, y_m_r - r, x_m_r + r, y_m_r + r, fill="green")
