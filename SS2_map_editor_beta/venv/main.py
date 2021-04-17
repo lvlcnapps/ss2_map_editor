@@ -50,7 +50,9 @@ class App(tk.Tk):
         self.label = tk.Label(text="Начало работы")
         self.label.pack(fill=tk.BOTH)
         self.geometry("960x646")
-        self.canvas = tk.Canvas(self, width=960, height=500, bg="white", cursor="tcross")
+        canv_frame = tk.Frame(self)
+        self.canvas = tk.Canvas(canv_frame, width=960, height=500, bg="white", cursor="tcross")
+        self.slider = tk.Scale(canv_frame, from_ = 500, to = 1000, orient=tk.VERTICAL)
 
         frame = tk.Frame(self)
         # Buttons
@@ -87,7 +89,9 @@ class App(tk.Tk):
         self.bind("<KeyRelease>", self.key_release)
         self.bind("<MouseWheel>", self.mouse_w)
         self.canvas.bind("<Motion>", self.mouse_xy)
-        self.canvas.pack(fill=tk.BOTH)
+        self.canvas.pack(expand=True, fill=tk.X, side=tk.LEFT)
+        self.slider.pack(expand=True, fill=tk.BOTH)
+        canv_frame.pack(fill=tk.BOTH)
         frame.pack(fill=tk.BOTH)
         bonuses_frame.pack(fill=tk.BOTH)
         self.save_info = tk.Label(text="Поле для названия файла:")
@@ -683,6 +687,8 @@ class App(tk.Tk):
         ind = 0
         for form in self.texts:
             self.buttons_walls[ind].config(image = self.photo_walls[ind], width=self.buttons_w, height=self.buttons_h)
+
+        self.canvas["height"] = self.slider.get()
 
         self.after(20, self.somebody_touches_my_keyboard) # delay
 
