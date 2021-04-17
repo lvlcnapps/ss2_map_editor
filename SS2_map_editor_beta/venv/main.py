@@ -28,10 +28,14 @@ class App(tk.Tk):
 
     # texts
     texts = ("внешние границы", "внутренние границы")
+    texts_bonuses = ("INSTANT HP", "INSTANT STAMINA", "LASER", "CHARGE", "BERSERK", "IMMORTALITY")
     texts_2 = ("Сохранить", "Открыть", "Новый")
 
     # arrays, data
     poly_points = []
+    bonus_counter = 0
+    bonuses_points = [[],[],[],[],[],[]]
+    bonuses_images = [[],[],[],[],[],[]]
     load_it = []
     back_up = [[]]
     one_t = 0
@@ -41,17 +45,37 @@ class App(tk.Tk):
         self.title("Редактор карт SS2 beta")
         self.form = None
         self.form_2 = None
+        self.buttons_w = "30"
+        self.buttons_h = "30"
         self.label = tk.Label(text="Начало работы")
         self.label.pack(fill=tk.BOTH)
-        self.geometry("640x630")
-        self.canvas = tk.Canvas(self, width=640, height=480, bg="white", cursor="tcross")
+        self.geometry("960x646")
+        self.canvas = tk.Canvas(self, width=960, height=500, bg="white", cursor="tcross")
 
         frame = tk.Frame(self)
         # Buttons
+        ind_walls = 0
+        self.photo_walls = [tk.PhotoImage(file = f'outer.png'), tk.PhotoImage(file = f'inner.png')]
+        self.buttons_walls = []
         for form in self.texts:
-            btn = tk.Button(frame, text=form.capitalize())
-            btn.config(command=partial(self.set_selection, btn, form))
+            btn = tk.Button(frame)
+            btn.config(command=partial(self.set_selection, btn, form), image = self.photo_walls[ind_walls], width=self.buttons_w, height=self.buttons_h)
             btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+            self.buttons_walls.append(btn)
+            ind_walls += 1
+
+        bonuses_frame = tk.Frame(self)
+        ind = 0
+        self.photoimage = []
+        self.buttons_bonuses = []
+        for i in range(6):
+            self.photoimage.append(tk.PhotoImage(file = f'bonus{i}.png'))
+        for form in self.texts_bonuses:
+            btn = tk.Button(frame)
+            btn.config(command=partial(self.set_selection, btn, form), image = self.photoimage[ind], width=self.buttons_w, height=self.buttons_h)
+            btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
+            self.buttons_bonuses.append(btn)
+            ind += 1
 
         # Bindings events to functions
         self.canvas.bind("<Button-1>", self.append_point)
@@ -65,6 +89,7 @@ class App(tk.Tk):
         self.canvas.bind("<Motion>", self.mouse_xy)
         self.canvas.pack(fill=tk.BOTH)
         frame.pack(fill=tk.BOTH)
+        bonuses_frame.pack(fill=tk.BOTH)
         self.save_info = tk.Label(text="Поле для названия файла:")
         self.save_info.pack(fill=tk.BOTH)
         self.T = tk.Text(height=1, width=10)
@@ -149,6 +174,25 @@ class App(tk.Tk):
                     sum_text += new_t
                 x += 1
             sum_text += "END\n"
+        for i in range(6):
+            sum_text += "BONUS "
+            if (i == 0):
+                sum_text += "INSTANT_HP\n"
+            if (i == 1):
+                sum_text += "INSTANT_STAMINA\n"
+            if (i == 2):
+                sum_text += "LASER\n"
+            if (i == 3):
+                sum_text += "CHARGE\n"
+            if (i == 4):
+                sum_text += "BERSERK\n"
+            if (i == 5):
+                sum_text += "IMMORTALITY\n"
+
+            for point in self.bonuses_points[i]:
+                sum_text += f'    POINT {round(point[0], 2)} {round(point[1], 2)}\n'
+
+            sum_text += "END\n"
         sum_text += "END"
         return sum_text
 
@@ -156,6 +200,7 @@ class App(tk.Tk):
     def my_read(self, file_name):
         f = open(f'{file_name}.{self.ras}', 'r')
         load_it = []
+        counter = 0
         while (True):
             str = f.readline()
             if (str == "END"):
@@ -176,6 +221,43 @@ class App(tk.Tk):
                         new_poly.append(float(kom[1]))
                         new_poly.append(float(kom[2]))
                 load_it.append(new_poly.copy())
+            if (str.startswith("BONUS")):
+                id = 0
+                if (str.split()[1] == "INSTANT_HP"):
+                    id = 0
+                if (str.split()[1] == "INSTANT_STAMINA"):
+                    id = 1
+                if (str.split()[1] == "LASER"):
+                    id = 2
+                if (str.split()[1] == "CHARGE"):
+                    id = 3
+                if (str.split()[1] == "BERSERK"):
+                    id = 4
+                if (str.split()[1] == "IMMORTALITY"):
+                    id = 5
+                mega_poly = []
+                new_poly = []
+                image_new = []
+                check = 0
+
+                while (True):
+                    str = f.readline()
+                    if (str.startswith("END")):
+                        break
+                    if (str.startswith("    POINT")):
+                        kom = str.split()
+                        new_poly.append(float(kom[1]))
+                        new_poly.append(float(kom[2]))
+                        new_poly.append(counter)
+                        check = 1
+                        image_new.append([tk.PhotoImage(file=f'bonus{id}.png')])
+                        counter += 1
+                        mega_poly.append(new_poly.copy())
+                        new_poly.clear()
+                if (check != 0):
+                    self.bonuses_points[id] = mega_poly
+                    self.bonuses_images[id] = image_new
+        # print(self.bonuses_points) # [[[-6.88, 0.28, 0], [-3.58, 0.22, 1]], [], [], [], [], []]
         return load_it
 
     # converting from/to my cords system
@@ -191,8 +273,17 @@ class App(tk.Tk):
     def convert_y_from_my_cords(self, new_c):
         return (new_c - int(self.canvas.winfo_height()) / 2) / self.scale - self.camera_y
 
+    def draw_bonuses(self):
+        for i in range(6):
+            iter = 0
+            for point in self.bonuses_points[i]:
+                self.canvas.create_image(self.convert_x_to_my_cords(point[0]) - 12, self.convert_y_to_my_cords(point[1]) - 12, anchor="nw", image=self.bonuses_images[i][iter])
+                self.canvas.image = image=self.bonuses_images[i][iter]
+                iter += 1
+
     # drawing grid and Oxy
     def draw_grid(self):
+        #print(self.bonuses_points)
         x_initial = int(-self.camera_x) - math.ceil(int(self.canvas.winfo_width()) / self.scale / 2)  - 1
         col_x = math.ceil(int(self.canvas.winfo_width()) / self.scale) + 2
         for i in range(col_x):
@@ -332,6 +423,19 @@ class App(tk.Tk):
                     self.choosed_poly = pol
                 id += 1
 
+        if "bonus_ch_id" in self.pressed_keys and "BackSpace" in self.pressed_keys:
+            for i in range(6):
+                new_points = []
+                for point in self.bonuses_points[i]:
+                    if (point[2] != self.pressed_keys["bonus_ch_id"]):
+                        new_points.append(point)
+                    else:
+                        self.bonuses_images[i].pop(0)
+                #print(new_points)
+                #self.pressed_keys.pop("bonus_ch_id")
+                self.bonuses_points[i] = new_points.copy()
+
+
         # deleting choosed polygon
         if "ch_id" in self.pressed_keys and "Delete" in self.pressed_keys:
             new_load_it = []
@@ -358,6 +462,15 @@ class App(tk.Tk):
                 if ((self.inPolygon(mouse_x, mouse_y, xpol, ypol)) and polygon[0] == 1):
                     pred_id = id
                 id += 1
+
+            bon_pred_id = -1
+            for i in range(6):
+                for point in self.bonuses_points[i]:
+                    if (self.inBonus(mouse_x, mouse_y, point[0], point[1])):
+                        bon_pred_id = point[2]
+
+            if (bon_pred_id >= 0):
+                self.pressed_keys["over_bonus"] = bon_pred_id
 
             if (pred_id >= 0):
                 self.pressed_keys["over"] = pred_id
@@ -405,10 +518,15 @@ class App(tk.Tk):
             self.title(f'Редактор карт SS2 beta. Открыт файл {file_name}.{self.ras}')
             f.close()
 
+        #print(self.bonuses_points)
+
         # new
         if (not 'Control_L' in self.pressed_keys and 'n' in self.released_keys):
             self.released_keys.pop('n', None)
         if ('Control_L' in self.pressed_keys and 'n' in self.released_keys) or self.form_2 == "Новый":
+            self.bonuses_points = [[],[],[],[],[],[]]
+            self.bonuses_images = [[],[],[],[],[],[]]
+            self.bonus_counter = 0
             self.released_keys.pop('n', None)
             self.form_2 = None
             self.load_it.clear()
@@ -499,8 +617,10 @@ class App(tk.Tk):
         # drawing grid
         self.draw_grid()
 
+
+
         # align to grid
-        if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys:
+        if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys and ((self.form == None) or (self.form == "внешние границы") or (self.form == "внутренние границы")):
             x = round(self.convert_x_from_my_cords(self.pressed_keys["m_x"]))
             y = round(self.convert_y_from_my_cords(self.pressed_keys["m_y"]))
             r = 3
@@ -553,6 +673,17 @@ class App(tk.Tk):
                 self.draw_polygon(can_be, "red", 0) # outer
             can_be.clear()
 
+        # drawing bonuses
+        self.draw_bonuses()
+
+        ind = 0
+        for form in self.texts_bonuses:
+            self.buttons_bonuses[ind].config(image = self.photoimage[ind], width=self.buttons_w, height=self.buttons_h)
+
+        ind = 0
+        for form in self.texts:
+            self.buttons_walls[ind].config(image = self.photo_walls[ind], width=self.buttons_w, height=self.buttons_h)
+
         self.after(20, self.somebody_touches_my_keyboard) # delay
 
     # buttons
@@ -569,6 +700,37 @@ class App(tk.Tk):
     def append_point(self, event):
         x = self.convert_x_from_my_cords(event.x)
         y = self.convert_y_from_my_cords(event.y)
+        if (self.form == self.texts_bonuses[0]): # ("Здоровье", "Стамина", "Лазер", "Ускорение", "Машина убийств", "Бессмертие")
+            self.bonuses_points[0].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[0].append([tk.PhotoImage(file="bonus0.png")])
+            #print(self.bonuses_points[0])
+            return
+        if (self.form == self.texts_bonuses[1]):
+            self.bonuses_points[1].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[1].append([tk.PhotoImage(file="bonus1.png")])
+            return
+        if (self.form == self.texts_bonuses[2]):
+            self.bonuses_points[2].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[2].append([tk.PhotoImage(file="bonus2.png")])
+            return
+        if (self.form == self.texts_bonuses[3]):
+            self.bonuses_points[3].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[3].append([tk.PhotoImage(file="bonus3.png")])
+            return
+        if (self.form == self.texts_bonuses[4]):
+            self.bonuses_points[4].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[4].append([tk.PhotoImage(file="bonus4.png")])
+            return
+        if (self.form == self.texts_bonuses[5]):
+            self.bonuses_points[5].append([x, y, self.bonus_counter])
+            self.bonus_counter += 1
+            self.bonuses_images[5].append([tk.PhotoImage(file="bonus5.png")])
+            return
         if "Shift_L" in self.pressed_keys:
             self.poly_points.append(round(x))
             self.poly_points.append(round(y))
@@ -604,6 +766,14 @@ class App(tk.Tk):
                     (xx > (xp[i - 1] - xp[i]) * (yy - yp[i]) / (yp[i - 1] - yp[i]) + xp[i])): c = 1 - c
         return c
 
+    def inBonus(self, xx, yy, xp, yp):
+        #print("-----------")
+        #print(f'{xx} {yy} {xp} {yp}')
+        #print("-----------")
+        if (abs(xx - xp) < 12 / self.scale and abs(yy - yp) < 12 / self.scale):
+            return 1
+        return 0
+
     # appending new polygon
     def draw_item_2(self, event):
         if (self.now != 0):
@@ -612,10 +782,12 @@ class App(tk.Tk):
                 self.poly_points.reverse()
                 self.poly_points.append(1)
                 self.poly_points.reverse()
-            if (self.form == "внутренние границы"):
+            elif (self.form == "внутренние границы"):
                 self.poly_points.reverse()
                 self.poly_points.append(0)
                 self.poly_points.reverse()
+            else:
+                return
             self.load_it.append(self.poly_points.copy())
             self.back_up.insert(self.curr_bu + 1, self.load_it.copy())
             self.curr_bu += 1
@@ -623,6 +795,8 @@ class App(tk.Tk):
         else:
             if ("over" in self.pressed_keys):
                 self.pressed_keys["ch_id"] = self.pressed_keys["over"]
+            if ("over_bonus" in self.pressed_keys):
+                self.pressed_keys["bonus_ch_id"] = self.pressed_keys["over_bonus"]
 
 # run
 if __name__ == "__main__":
