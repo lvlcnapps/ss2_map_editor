@@ -49,10 +49,11 @@ class App(tk.Tk):
         self.buttons_h = "30"
         self.label = tk.Label(text="Начало работы")
         self.label.pack(fill=tk.BOTH)
-        self.geometry("960x646")
-        canv_frame = tk.Frame(self)
-        self.canvas = tk.Canvas(canv_frame, width=960, height=500, bg="white", cursor="tcross")
-        self.slider = tk.Scale(canv_frame, from_ = 500, to = 1000, orient=tk.VERTICAL)
+        self.geometry("1080x646")
+        # canv_frame = tk.Frame(self)
+        self.canvas = tk.Canvas(self, width=960, height=500, bg="white", cursor="tcross")
+        # self.slider = tk.Scale(canv_frame, from_ = 500, to = 1000, orient=tk.VERTICAL)
+
 
         frame = tk.Frame(self)
         # Buttons
@@ -89,9 +90,9 @@ class App(tk.Tk):
         self.bind("<KeyRelease>", self.key_release)
         self.bind("<MouseWheel>", self.mouse_w)
         self.canvas.bind("<Motion>", self.mouse_xy)
-        self.canvas.pack(expand=True, fill=tk.X, side=tk.LEFT)
-        self.slider.pack(expand=True, fill=tk.BOTH)
-        canv_frame.pack(fill=tk.BOTH)
+        self.canvas.pack(fill = tk.BOTH)
+        # self.slider.pack(expand=True, fill=tk.BOTH)
+        # canv_frame.pack(fill=tk.BOTH)
         frame.pack(fill=tk.BOTH)
         bonuses_frame.pack(fill=tk.BOTH)
         self.save_info = tk.Label(text="Поле для названия файла:")
@@ -299,9 +300,12 @@ class App(tk.Tk):
             line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
             if (x_initial == 0):
-                self.canvas.create_line(*line, fill="blue", width=3)
+                self.canvas.create_line(*line, fill="blue", width=4)
             else:
-                self.canvas.create_line(*line, fill="gray", width=2)
+                if (x_initial % 10 == 0):
+                    self.canvas.create_line(*line, fill="gray", width=3)
+                else:
+                    self.canvas.create_line(*line, fill="#D5D5D5", width=2)
         y_initial = int(-self.camera_y) - math.ceil(int(self.canvas.winfo_height()) / self.scale/ 2)  - 1
         col_y = math.ceil(int(self.canvas.winfo_height()) / self.scale) + 1
         for i in range(col_y):
@@ -313,9 +317,12 @@ class App(tk.Tk):
             line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
             if (y_initial == 0):
-                self.canvas.create_line(*line, fill="blue", width=3)
+                self.canvas.create_line(*line, fill="blue", width=4)
             else:
-                self.canvas.create_line(*line, fill="gray", width=2)
+                if (y_initial % 10 == 0):
+                    self.canvas.create_line(*line, fill="gray", width=3)
+                else:
+                    self.canvas.create_line(*line, fill="#D5D5D5", width=2)
 
     # moving camera by mouse wheel click
     def move_camera(self, mouse_x, mouse_y):
@@ -624,7 +631,7 @@ class App(tk.Tk):
 
 
         # align to grid
-        if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys and ((self.form == None) or (self.form == "внешние границы") or (self.form == "внутренние границы")):
+        if "Shift_L" in self.pressed_keys and "m_x" in self.pressed_keys:
             x = round(self.convert_x_from_my_cords(self.pressed_keys["m_x"]))
             y = round(self.convert_y_from_my_cords(self.pressed_keys["m_y"]))
             r = 3
@@ -688,7 +695,7 @@ class App(tk.Tk):
         for form in self.texts:
             self.buttons_walls[ind].config(image = self.photo_walls[ind], width=self.buttons_w, height=self.buttons_h)
 
-        self.canvas["height"] = self.slider.get()
+        self.canvas["height"] = self.winfo_height() - 146
 
         self.after(20, self.somebody_touches_my_keyboard) # delay
 
@@ -706,6 +713,9 @@ class App(tk.Tk):
     def append_point(self, event):
         x = self.convert_x_from_my_cords(event.x)
         y = self.convert_y_from_my_cords(event.y)
+        if "Shift_L" in self.pressed_keys:
+            x = round(x)
+            y = round(y)
         if (self.form == self.texts_bonuses[0]): # ("Здоровье", "Стамина", "Лазер", "Ускорение", "Машина убийств", "Бессмертие")
             self.bonuses_points[0].append([x, y, self.bonus_counter])
             self.bonus_counter += 1
@@ -737,13 +747,8 @@ class App(tk.Tk):
             self.bonus_counter += 1
             self.bonuses_images[5].append([tk.PhotoImage(file="bonus5.png")])
             return
-        if "Shift_L" in self.pressed_keys:
-            self.poly_points.append(round(x))
-            self.poly_points.append(round(y))
-            self.pressed_keys.pop("Shift_L", None)
-        else:
-            self.poly_points.append(round(x, 2))
-            self.poly_points.append(round(y, 2))
+        self.poly_points.append(round(x, 2))
+        self.poly_points.append(round(y, 2))
         self.now += 1
 
     # appending new polygon
