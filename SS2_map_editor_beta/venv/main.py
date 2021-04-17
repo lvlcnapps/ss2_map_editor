@@ -45,8 +45,13 @@ class App(tk.Tk):
         self.title("Редактор карт SS2 beta")
         self.form = None
         self.form_2 = None
+
         self.buttons_w = "30"
         self.buttons_h = "30"
+        self.color_oxy_grid = "#9B99FF"
+        self.color_every_ten_grid = "#A6A6A6"
+        self.color_grid = "#D5D5D5"
+
         self.label = tk.Label(text="Начало работы")
         self.label.pack(fill=tk.BOTH)
         self.geometry("1080x646")
@@ -114,7 +119,7 @@ class App(tk.Tk):
         self.file_buttons_frame.update()
 
         self.sum_ex = self.label.winfo_reqheight() + frame.winfo_reqheight() + self.save_info.winfo_reqheight() + self.T.winfo_reqheight() + self.file_buttons_frame.winfo_reqheight() - 1
-        print(self.sum_ex)
+        #print(self.sum_ex)
 
         # main loop
         self.somebody_touches_my_keyboard()
@@ -167,8 +172,10 @@ class App(tk.Tk):
             self.canvas.create_polygon(*poly_cords, fill=color)
         elif (filled == 0):
             self.canvas.create_polygon(*poly_cords, outline=color, fill='', width=2)
+        elif (filled == 2):
+            self.canvas.create_polygon(*poly_cords, fill = 'black', outline="cyan", width=3)
         else:
-            self.canvas.create_polygon(*poly_cords, fill=color, outline="cyan", width=3)
+            self.canvas.create_polygon(*poly_cords, fill='', outline="cyan", width=3)
 
     # making huge string of polygons to save it
     def my_printing(self, load_it):
@@ -296,8 +303,7 @@ class App(tk.Tk):
                 iter += 1
 
     # drawing grid and Oxy
-    def draw_grid(self):
-        #print(self.bonuses_points)
+    def draw_grid(self, ten):
         x_initial = int(-self.camera_x) - math.ceil(int(self.canvas.winfo_width()) / self.scale / 2)  - 1
         col_x = math.ceil(int(self.canvas.winfo_width()) / self.scale) + 2
         for i in range(col_x):
@@ -308,13 +314,13 @@ class App(tk.Tk):
             line_copy[2] = self.convert_x_to_my_cords(line_copy[2])
             line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
-            if (x_initial == 0):
-                self.canvas.create_line(*line, fill="blue", width=4)
+            if (x_initial == 0 and ten == 1):
+                self.canvas.create_line(*line, fill=self.color_oxy_grid, width=4)
             else:
-                if (x_initial % 10 == 0):
-                    self.canvas.create_line(*line, fill="gray", width=3)
-                else:
-                    self.canvas.create_line(*line, fill="#D5D5D5", width=2)
+                if (x_initial % 10 == 0 and ten == 1):
+                    self.canvas.create_line(*line, fill=self.color_every_ten_grid, width=3)
+                elif (ten == 0):
+                    self.canvas.create_line(*line, fill=self.color_grid, width=2)
         y_initial = int(-self.camera_y) - math.ceil(int(self.canvas.winfo_height()) / self.scale/ 2)  - 1
         col_y = math.ceil(int(self.canvas.winfo_height()) / self.scale) + 1
         for i in range(col_y):
@@ -325,13 +331,13 @@ class App(tk.Tk):
             line_copy[2] = self.convert_x_to_my_cords(line_copy[2])
             line_copy[3] = self.convert_y_to_my_cords(line_copy[3])
             line = tuple(line_copy)
-            if (y_initial == 0):
-                self.canvas.create_line(*line, fill="blue", width=4)
+            if (y_initial == 0 and ten == 1):
+                self.canvas.create_line(*line, fill=self.color_oxy_grid, width=4)
             else:
-                if (y_initial % 10 == 0):
-                    self.canvas.create_line(*line, fill="gray", width=3)
-                else:
-                    self.canvas.create_line(*line, fill="#D5D5D5", width=2)
+                if (y_initial % 10 == 0 and ten == 1):
+                    self.canvas.create_line(*line, fill=self.color_every_ten_grid, width=3)
+                elif (ten == 0):
+                    self.canvas.create_line(*line, fill=self.color_grid, width=2)
 
     # moving camera by mouse wheel click
     def move_camera(self, mouse_x, mouse_y):
@@ -476,12 +482,22 @@ class App(tk.Tk):
             mouse_y = self.convert_y_from_my_cords(self.pressed_keys["m_y"])
             id = 0
             pred_id = -1
+
+            for polygon in self.load_it:
+                xpol = self.getXparse(polygon)
+                ypol = self.getYparse(polygon)
+                if ((not self.inPolygon(mouse_x, mouse_y, xpol, ypol)) and polygon[0] == 0):
+                    pred_id = id
+                id += 1
+
+            id = 0
             for polygon in self.load_it:
                 xpol = self.getXparse(polygon)
                 ypol = self.getYparse(polygon)
                 if ((self.inPolygon(mouse_x, mouse_y, xpol, ypol)) and polygon[0] == 1):
                     pred_id = id
                 id += 1
+
 
             bon_pred_id = -1
             for i in range(6):
@@ -635,7 +651,8 @@ class App(tk.Tk):
                 self.scale = 50
 
         # drawing grid
-        self.draw_grid()
+        self.draw_grid(0)
+        self.draw_grid(1)
 
 
 
@@ -656,7 +673,12 @@ class App(tk.Tk):
         for polygon in self.load_it:
             copy = polygon.copy()
             if (copy[0] == 0):
-                self.draw_polygon(copy[1:], "black", 0) # outline/outer
+                # self.draw_polygon(copy[1:], "black", 0) # outline/outer
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "black", 3) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "black", 0) # filled/inner
             else:
                 if (cc_id == may_id):
                     #print(cc_id)
