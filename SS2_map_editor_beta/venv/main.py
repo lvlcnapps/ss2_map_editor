@@ -107,6 +107,15 @@ class App(tk.Tk):
             btn.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
         self.file_buttons_frame.pack(fill=tk.BOTH)
 
+        self.label.update()
+        frame.update()
+        self.save_info.update()
+        self.T.update()
+        self.file_buttons_frame.update()
+
+        self.sum_ex = self.label.winfo_reqheight() + frame.winfo_reqheight() + self.save_info.winfo_reqheight() + self.T.winfo_reqheight() + self.file_buttons_frame.winfo_reqheight() - 1
+        print(self.sum_ex)
+
         # main loop
         self.somebody_touches_my_keyboard()
 
@@ -695,7 +704,7 @@ class App(tk.Tk):
         for form in self.texts:
             self.buttons_walls[ind].config(image = self.photo_walls[ind], width=self.buttons_w, height=self.buttons_h)
 
-        self.canvas["height"] = self.winfo_height() - 146
+        self.canvas["height"] = self.winfo_height() - self.sum_ex
 
         self.after(20, self.somebody_touches_my_keyboard) # delay
 
