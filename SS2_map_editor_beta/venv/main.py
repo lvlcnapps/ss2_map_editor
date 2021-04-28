@@ -27,7 +27,7 @@ class App(tk.Tk):
     timer = 0
 
     # texts
-    texts = ("внешние границы", "внутренние границы")
+    texts = ("внешние границы", "внутренние границы", "внешние убивающие", "внутренние убивающие", "внешние призрачные", "внутренние призрачные")
     texts_bonuses = ("INSTANT HP", "INSTANT STAMINA", "LASER", "CHARGE", "BERSERK", "IMMORTALITY")
     texts_2 = ("Сохранить", "Открыть", "Новый")
 
@@ -51,19 +51,25 @@ class App(tk.Tk):
         self.color_oxy_grid = "#9B99FF"
         self.color_every_ten_grid = "#A6A6A6"
         self.color_grid = "#D5D5D5"
+        self.color_standart_poly = "black"
+        self.color_new_poly = "red"
+        self.color_spiked_poly = "pink"
+        self.color_ghost_poly = "green"
+        self.color_bg = "white"
+        self.color_choosed = "cyan"
 
         self.label = tk.Label(text="Начало работы")
         self.label.pack(fill=tk.BOTH)
         self.geometry("1080x646")
         # canv_frame = tk.Frame(self)
-        self.canvas = tk.Canvas(self, width=960, height=500, bg="white", cursor="tcross")
+        self.canvas = tk.Canvas(self, width=960, height=500, bg=self.color_bg, cursor="tcross")
         # self.slider = tk.Scale(canv_frame, from_ = 500, to = 1000, orient=tk.VERTICAL)
 
 
         frame = tk.Frame(self)
         # Buttons
         ind_walls = 0
-        self.photo_walls = [tk.PhotoImage(file = f'outer.png'), tk.PhotoImage(file = f'inner.png')]
+        self.photo_walls = [tk.PhotoImage(file = f'outer.png'), tk.PhotoImage(file = f'inner.png'), tk.PhotoImage(file = f'outer_spiked.png'), tk.PhotoImage(file = f'inner_spiked.png'), tk.PhotoImage(file = f'outer_ghost.png'), tk.PhotoImage(file = f'inner_ghost.png')]
         self.buttons_walls = []
         for form in self.texts:
             btn = tk.Button(frame)
@@ -173,9 +179,9 @@ class App(tk.Tk):
         elif (filled == 0):
             self.canvas.create_polygon(*poly_cords, outline=color, fill='', width=2)
         elif (filled == 2):
-            self.canvas.create_polygon(*poly_cords, fill = 'black', outline="cyan", width=3)
+            self.canvas.create_polygon(*poly_cords, fill = self.color_standart_poly, outline = self.color_choosed, width=3)
         else:
-            self.canvas.create_polygon(*poly_cords, fill='', outline="cyan", width=3)
+            self.canvas.create_polygon(*poly_cords, fill = '', outline = self.color_choosed, width=3)
 
     # making huge string of polygons to save it
     def my_printing(self, load_it):
@@ -186,8 +192,20 @@ class App(tk.Tk):
             sum_text += "WALL\n"
             if (poly[0] == 1) :
                 sum_text += "    OUTER\n"
-            else:
+            elif (poly[0] == 0):
                 sum_text += "    INNER\n"
+            elif (poly[0] == 3) :
+                sum_text += "    OUTER\n"
+                sum_text += "    SPIKED\n"
+            elif (poly[0] == 2):
+                sum_text += "    INNER\n"
+                sum_text += "    SPIKED\n"
+            elif (poly[0] == 5) :
+                sum_text += "    OUTER\n"
+                sum_text += "    GHOST\n"
+            elif (poly[0] == 4):
+                sum_text += "    INNER\n"
+                sum_text += "    GHOST\n"
             x = 0
             for cords_out in poly:
                 if ((x > 0) and (x % 2)):
@@ -229,18 +247,27 @@ class App(tk.Tk):
             if (str.startswith("WALL")):
                 new_poly = []
                 in_out = f.readline()
+                iid = 0
                 if (in_out == "    OUTER\n"):
-                    new_poly.append(1)
+                    iid += 1
                 else:
-                    new_poly.append(0)
-                while (True):
+                    iid += 0
+                str = f.readline()
+                if (str == "    SPIKED\n"):
+                    iid += 2
                     str = f.readline()
+                elif (str == "    GHOST\n"):
+                    iid += 4
+                    str = f.readline()
+                new_poly.append(iid)
+                while (True):
                     if (str == "END\n"):
                         break
                     if (str.startswith("    POINT")):
                         kom = str.split()
                         new_poly.append(float(kom[1]))
                         new_poly.append(float(kom[2]))
+                    str = f.readline()
                 load_it.append(new_poly.copy())
             if (str.startswith("BONUS")):
                 id = 0
@@ -679,12 +706,38 @@ class App(tk.Tk):
                     self.draw_polygon(copy[1:], "black", 3) # choosed/filled/inner
                 else:
                     self.draw_polygon(copy[1:], "black", 0) # filled/inner
-            else:
+            elif (copy[0] == 1):
                 if (cc_id == may_id):
                     #print(cc_id)
                     self.draw_polygon(copy[1:], "black", 2) # choosed/filled/inner
                 else:
                     self.draw_polygon(copy[1:], "black", 1) # filled/inner
+
+            elif (copy[0] == 2):
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "pink", 3) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "pink", 0) # filled/inner
+            elif (copy[0] == 3):
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "pink", 2) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "pink", 1) # filled/inner
+
+            elif (copy[0] == 4):
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "green", 3) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "green", 0) # filled/inner
+            elif (copy[0] == 5):
+                if (cc_id == may_id):
+                    #print(cc_id)
+                    self.draw_polygon(copy[1:], "green", 2) # choosed/filled/inner
+                else:
+                    self.draw_polygon(copy[1:], "green", 1) # filled/inner
             may_id += 1
 
         # draw red line
@@ -701,7 +754,15 @@ class App(tk.Tk):
         if (self.now > 2):
             if ((self.form == None) or (self.form == "внешние границы")):
                 self.draw_polygon(self.poly_points, "red", 1) # inner
-            else:
+            elif (self.form == "внутренние границы"):
+                self.draw_polygon(self.poly_points, "red", 0) # outer
+            elif (self.form == "внешние убивающие"):
+                self.draw_polygon(self.poly_points, "red", 1) # inner
+            elif (self.form == "внутренние убивающие"):
+                self.draw_polygon(self.poly_points, "red", 0) # outer
+            elif (self.form == "внешние призрачные"):
+                self.draw_polygon(self.poly_points, "red", 1) # inner
+            elif (self.form == "внутренние призрачные"):
                 self.draw_polygon(self.poly_points, "red", 0) # outer
             can_be = self.poly_points.copy()
             if "m_x" in self.pressed_keys: # if mouse on canvas: draw possible red polygon
@@ -711,8 +772,17 @@ class App(tk.Tk):
                 can_be.append(new_y)
             if ((self.form == None) or (self.form == "внешние границы")):
                 self.draw_polygon(can_be, "red", 1) # inner
-            else:
+            elif (self.form == "внутренние границы"):
                 self.draw_polygon(can_be, "red", 0) # outer
+            elif (self.form == "внешние убивающие"):
+                self.draw_polygon(can_be, "red", 1) # inner
+            elif (self.form == "внутренние убивающие"):
+                self.draw_polygon(can_be, "red", 0) # outer
+            elif (self.form == "внешние призрачные"):
+                self.draw_polygon(can_be, "red", 1) # inner
+            elif (self.form == "внутренние призрачные"):
+                self.draw_polygon(can_be, "red", 0) # outer
+
             can_be.clear()
 
         # drawing bonuses
@@ -827,6 +897,22 @@ class App(tk.Tk):
             elif (self.form == "внутренние границы"):
                 self.poly_points.reverse()
                 self.poly_points.append(0)
+                self.poly_points.reverse()
+            elif (self.form == "внешние убивающие"):
+                self.poly_points.reverse()
+                self.poly_points.append(3)
+                self.poly_points.reverse()
+            elif (self.form == "внутренние убивающие"):
+                self.poly_points.reverse()
+                self.poly_points.append(2)
+                self.poly_points.reverse()
+            elif (self.form == "внешние призрачные"):
+                self.poly_points.reverse()
+                self.poly_points.append(5)
+                self.poly_points.reverse()
+            elif (self.form == "внутренние призрачные"):
+                self.poly_points.reverse()
+                self.poly_points.append(4)
                 self.poly_points.reverse()
             else:
                 return
